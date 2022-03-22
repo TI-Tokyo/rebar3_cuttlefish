@@ -77,7 +77,14 @@ relx_rem_sh() {
 
 # Generate a random id
 relx_gen_id() {
-    od -X -N 4 /dev/urandom | head -n1 | awk '{print $2}'
+    # To prevent exhaustion of atoms on target node, optionally avoid
+    # generation of random node prefixes, if it is guaranteed calls
+    # are always sequential.
+    if [ -z "${NODETOOL_NODE_PREFIX}" ]; then
+        dd count=1 bs=4 if=/dev/urandom 2> /dev/null | od -x  | head -n1 | awk '{print $2$3}'
+    else
+        echo "${NODETOOL_NODE_PREFIX}"
+    fi
 }
 
 # Control a node
@@ -444,8 +451,20 @@ case "$1" in
         relx_nodetool rpcterms $@
         ;;
 
+    versions)
+        if ! relx_nodetool "ping" > /dev/null; then
+            echo "Node is not running!"
+            exit 1
+        fi
+
+        COMMAND="$1"; shift
+
+        exec "$BINDIR/escript" "$ROOTDIR/bin/install_upgrade.escript" \
+             "versions" "{'$REL_NAME', \"$NAME_TYPE\", '$NAME', '$COOKIE'}" "$@"
+        ;;
+
     *)
-        echo "Usage: $REL_NAME {start|start_boot <file>|foreground|stop|restart|reboot|pid|ping|console|console_clean|console_boot <file>|attach|remote_console|upgrade|config|escript|rpc|rpcterms}"
+        echo "Usage: $REL_NAME {start|start_boot <file>|foreground|stop|restart|reboot|pid|ping|console|console_clean|console_boot <file>|attach|remote_console|upgrade|config|escript|rpc|rpcterms|versions}"
         exit 1
         ;;
 esac

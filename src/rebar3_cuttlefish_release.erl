@@ -22,7 +22,7 @@ init(State) ->
             {bare, true},                 % The task can be run by the user, always true
             {deps, ?DEPS},                % The list of dependencies
             {example, "rebar3 cuttlefish release"}, % How to use the plugin
-            {opts, relx:opt_spec_list()},                   % list of options understood by the plugin
+            {opts, supported_options()},                   % list of options understood by the plugin
             {short_desc, "Rebar3 cuttlefish release plugin"},
             {desc, ""}
     ]),
@@ -214,4 +214,11 @@ rebar_release_dir(State) ->
             DefaultRelDir;
         OutputDir ->
             OutputDir
+    end.
+
+supported_options() ->
+    try
+        relx:opt_spec_list()
+    catch _:undef ->
+            rebar_relx:opt_spec_list()
     end.

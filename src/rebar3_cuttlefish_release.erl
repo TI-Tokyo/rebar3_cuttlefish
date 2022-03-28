@@ -1,9 +1,10 @@
 -module(rebar3_cuttlefish_release).
 -behaviour(provider).
 
--export([init/1
-        ,do/1
-        ,format_error/1]).
+-export([ init/1
+        , do/1
+        , format_error/1
+        ]).
 
 -define(PROVIDER, release).
 -define(NAMESPACE, default).
@@ -99,7 +100,7 @@ do(State) ->
     State1 = rebar_state:set(State, relx, lists:keydelete(overlay, 1, Relx) ++
                                  [{generate_start_script, DisableCFRelScripts},
                                   {overlay, Overlays3} | StartHookState]),
-    Res = rebar_relx:do(rlx_prv_release, "release", ?PROVIDER, State1),
+    Res = rebar_relx_do(State1),
     SchemaGlob = filename:join([TargetDir, "share", "schema", "*.schema"]),
     ReleaseSchemas = filelib:wildcard(SchemaGlob),
 
@@ -116,6 +117,15 @@ do(State) ->
         true ->
             Res
     end.
+
+rebar_relx_do(State) ->
+    try
+        rebar_relx:do(?PROVIDER, State)
+    catch _:undef ->
+            rebar_relx:do(rlx_prv_release, atom_to_list(?PROVIDER), ?PROVIDER, State)
+    end.
+
+
 
 -spec format_error(any()) ->  iolist().
 format_error({no_cuttlefish_escript, ProfileDir}) ->
@@ -162,7 +172,7 @@ maybe_set_startup_hook(false, _State) ->
     [{sys_config, false}, {vm_args, false}];
 maybe_set_startup_hook(true, State) ->
     RelxState = rebar_state:get(State, relx),
-    StartHooks0 = 
+    StartHooks0 =
         case lists:keyfind(extended_start_script_hooks, 1, RelxState) of
             {extended_start_script_hooks, StartHooks1} ->
                 do_set_start_hook(StartHooks1);

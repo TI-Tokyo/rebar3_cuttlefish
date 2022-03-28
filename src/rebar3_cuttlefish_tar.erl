@@ -1,9 +1,10 @@
 -module(rebar3_cuttlefish_tar).
 -behaviour(provider).
 
--export([init/1
-        ,do/1
-        ,format_error/1]).
+-export([ init/1
+        , do/1
+        , format_error/1
+        ]).
 
 -define(PROVIDER, tar).
 -define(NAMESPACE, default).
@@ -30,7 +31,12 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    rebar_relx:do(rlx_prv_release, "tar", ?PROVIDER, State).
+    try
+        rebar_relx:do(?PROVIDER, State)
+    catch _:undef ->
+            rebar_relx:do(rlx_prv_release, atom_to_list(?PROVIDER), ?PROVIDER, State)
+    end.
+
 
 -spec format_error(any()) ->  iolist().
 format_error(Error) ->

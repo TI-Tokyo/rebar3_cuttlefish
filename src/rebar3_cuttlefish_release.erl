@@ -23,7 +23,7 @@ init(State) ->
             {bare, true},                 % The task can be run by the user, always true
             {deps, ?DEPS},                % The list of dependencies
             {example, "rebar3 cuttlefish release"}, % How to use the plugin
-            {opts, supported_options()},                   % list of options understood by the plugin
+            {opts, rebar_relx:opt_spec_list()},     % list of options understood by the plugin
             {short_desc, "Rebar3 cuttlefish release plugin"},
             {desc, ""}
     ]),
@@ -100,7 +100,7 @@ do(State) ->
     State1 = rebar_state:set(State, relx, lists:keydelete(overlay, 1, Relx) ++
                                  [{generate_start_script, DisableCFRelScripts},
                                   {overlay, Overlays3} | StartHookState]),
-    Res = rebar_relx_do(State1),
+    Res = rebar_relx:do(?PROVIDER, State1),
     SchemaGlob = filename:join([TargetDir, "share", "schema", "*.schema"]),
     ReleaseSchemas = filelib:wildcard(SchemaGlob),
 
@@ -116,13 +116,6 @@ do(State) ->
             end;
         true ->
             Res
-    end.
-
-rebar_relx_do(State) ->
-    try
-        rebar_relx:do(?PROVIDER, State)
-    catch _:undef ->
-            rebar_relx:do(rlx_prv_release, atom_to_list(?PROVIDER), ?PROVIDER, State)
     end.
 
 
@@ -224,11 +217,4 @@ rebar_release_dir(State) ->
             DefaultRelDir;
         OutputDir ->
             OutputDir
-    end.
-
-supported_options() ->
-    try
-        relx:opt_spec_list()
-    catch _:undef ->
-            rebar_relx:opt_spec_list()
     end.
